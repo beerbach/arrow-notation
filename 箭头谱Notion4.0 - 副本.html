@@ -1,0 +1,2815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>箭头谱专业编辑器 v4.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* SVG箭头样式 */
+        .arrow-svg {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .arrow-svg.small {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .arrow-svg.large {
+            width: var(--arrow-size, 24px);
+            height: var(--arrow-size, 24px);
+        }
+        
+        /* 左侧控制面板 - 更紧凑 */
+        .control-panel {
+            width: 280px;
+            background: white;
+            border-right: 2px solid #ddd;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            padding: 10px;
+        }
+        
+        /* 可拖动分隔条样式 */
+        .resize-handle {
+            width: 5px;
+            background: #999;
+            cursor: col-resize;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .resize-handle:hover {
+            background: #4a90e2;
+            width: 8px;
+        }
+
+        .resize-handle:active {
+            background: #357abd;
+        }
+        
+        .panel-section {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            padding: 3px 8px;
+            background: #f5f5f5;
+            border-radius: 3px;
+        }
+        
+        /* 时值选择区 - 更紧凑 */
+        .duration-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .duration-btn {
+            padding: 6px 3px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        .duration-btn:hover {
+            background: #f0f8ff;
+            border-color: #4a90e2;
+        }
+        
+        .duration-btn.active {
+            background: #4a90e2;
+            color: white;
+            border-color: #357abd;
+        }
+        
+        .duration-display {
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+        
+        /* 特殊时值选项 */
+        .special-btn {
+            padding: 6px 3px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .special-btn:hover {
+            background: #fce4ec;
+            border-color: #e91e63;
+        }
+        
+        .special-btn.active {
+            background: #e91e63;
+            color: white;
+            border-color: #c2185b;
+        }
+        
+        /* 三连音状态显示 */
+        .triplet-status {
+            margin-top: 5px;
+            padding: 5px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .triplet-status.active {
+            display: block;
+        }
+        
+        /* 附点复选框 */
+        .dot-checkbox {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .dot-checkbox input {
+            margin-right: 8px;
+        }
+        
+        /* 变音符号选择区 - 更紧凑 */
+        .modifier-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .modifier-btn {
+            padding: 5px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .modifier-btn:hover {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+        
+        .modifier-btn.active {
+            background: #ff9800;
+            color: white;
+            border-color: #f57c00;
+        }
+        
+        .modifier-example {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 1px;
+        }
+        
+        /* 箭头音符区 - 更紧凑 */
+        .arrow-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .arrow-btn {
+            height: 50px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .arrow-btn:hover {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            transform: scale(1.05);
+        }
+        
+        .arrow-symbol {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .arrow-note {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        /* 减时线控制 */
+        .beam-control {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .beam-btn {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 11px;
+        }
+        
+        .beam-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .beam-btn.active {
+            background: #2196f3;
+            color: white;
+        }
+        
+        #beamComplete {
+            background: #4caf50;
+            color: white;
+            border-color: #45a049;
+        }
+        
+        #beamComplete:hover {
+            background: #45a049;
+        }
+        
+        /* 光标控制按钮 */
+        .cursor-control {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .cursor-btn {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .cursor-btn:hover {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+        
+        /* 间距调整控制 - 新增 */
+        .spacing-control {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .spacing-btn {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .spacing-btn:hover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        /* 其他控制按钮 */
+        .other-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+        }
+        
+        .other-btn {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 11px;
+        }
+        
+        .other-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        /* 行距调整控制 */
+        .line-spacing-control {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        
+        .line-spacing-control select,
+        .line-spacing-control button {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 2px;
+        }
+        
+        /* 右侧编辑区 */
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 工具栏 */
+        .toolbar {
+            height: 50px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .toolbar input {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 150px;
+        }
+        
+        .toolbar-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        
+        .toolbar-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        /* 字体大小控制 */
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: auto;
+        }
+        
+        .font-size-control label {
+            font-size: 12px;
+        }
+        
+        .font-size-control input {
+            width: 80px;
+        }
+        
+        /* 乐谱容器 - A4纸张设置 */
+        .score-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* A4纸张 - 210mm x 297mm */
+        .score-page {
+            width: 210mm;
+            min-height: 297mm;
+            max-height: 297mm;
+            background: white;
+            margin: 0 auto 20px;
+            padding: 20mm;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .score-title {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 13px;
+            color: #333;
+        }
+        
+        /* 曲目信息区域 - 新增 */
+        .score-info {
+            text-align: left;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .score-info input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-size: 14px;
+            color: #666;
+            outline: none;
+            border-bottom: 1px dashed #ddd;
+        }
+        
+        .score-info input:focus {
+            border-bottom: 1px solid #4a90e2;
+        }
+        
+        .score-content {
+            flex: 1;
+        }
+        
+        .score-line {
+            min-height: 60px;
+            margin-bottom: 20px;
+            margin-top: 0;
+            padding: 10px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 5px;
+            display: flex;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 13px; /* 减少音符组之间的间距 */
+            position: relative;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .score-line:hover {
+            background: #fafafa;
+        }
+        
+        .score-line.active {
+            border-color: #4a90e2;
+            background: #f0f8ff;
+        }
+        
+        /* 音符显示 - 更紧凑的间距 */
+        .note-group {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            font-size: var(--score-font-size, 24px);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0 -2px; /* 负边距使音符更紧密 */
+        }
+        
+        /* 居中样式 */
+        .score-line.centered {
+            justify-content: center;
+            gap: 8px; /* 居中时减少间距 */
+        }
+        
+        .score-line.centered .note-group,
+        .score-line.centered .triplet-group,
+        .score-line.centered .beam-group,
+        .score-line.centered .rest,
+        .score-line.centered .barline,
+        .score-line.centered .repeat-sign {
+            margin: 0 2px; /* 居中时的统一间距 */
+        }
+        
+        .note-group.selected {
+            background: rgba(66, 165, 245, 0.2);
+            border-radius: 4px;
+            padding: 2px;
+        }
+        
+        .note-content {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            position: relative;
+            gap: 0; /* 移除内部间隙 */
+        }
+        
+        .note-annotation {
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            font-weight: normal;
+            color: #666;
+        }
+        
+        /* 盒子标注 */
+        .note-box {
+            position: absolute;
+            top: -9px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-weight: bold;
+            color: #000000;
+            border: 1px solid #cccccc;
+            padding: 1px 3px;
+            border-radius: 3px;
+            background: #f8f8f8;
+            white-space: nowrap;
+        }
+        
+        /* 修饰符间距调整 - 更紧凑 */
+        .note-modifier-left {
+            font-size: 0.8em;
+            margin-right: -3px; /* 从2px改为1px */
+            color: #666;
+        }
+        
+        .note-modifier-right {
+            font-size: 0.8em;
+            margin-left: -3px; /* 从2px改为1px */
+            color: #666;
+        }
+        
+        .note-arrow {
+            font-size: 1em;
+        }
+        
+        .note-extend {
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 0; /* 移除左边距 */
+        }
+        
+        .note-dot {
+            font-size: 0.8em;
+            margin-left: 1px; /* 从2px改为1px */
+        }
+        
+        /* 连音线 */
+        .tie-symbol {
+            font-size: var(--score-font-size, 24px);
+            margin: 0 2px;
+            color: #666;
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* 三连音组 */
+        .triplet-group {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            margin: 0 2px;
+        }
+        
+        .triplet-bracket {
+            position: absolute;
+            top: -10px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .triplet-notes {
+            display: flex;
+            gap: 5px; /* 三连音内部间隙也减少 */
+        }
+        
+        /* 减时线 */
+        .beam-container {
+            position: relative;
+            height: 10px;
+            margin-top: 2px;
+            width: 100%;
+        }
+        
+        .beam-line {
+            position: absolute;
+            height: 2px;
+            background: #333;
+            width: 100%;
+        }
+        
+        .beam-line.second {
+            top: 4px;
+        }
+        
+        /* 连接的减时线组 */
+        .beam-group {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+            margin: 0 2px;
+        }
+        
+        .beam-group .note-groups {
+            display: flex;
+            gap: 5px; /* 减少连音组内间距 */
+        }
+        
+        /* 智能减时线容器 */
+        .beam-group .smart-beams {
+            position: relative;
+            width: 100%;
+            height: 10px;
+            margin-top: 2px;
+        }
+        
+        .beam-group .connected-beam {
+            position: absolute;
+            height: 2px;
+            background: #333;
+        }
+        
+        .beam-group .connected-beam.first {
+            top: 0;
+            width: 100%;
+        }
+        
+        .beam-group .connected-beam.second {
+            top: 4px;
+        }
+        
+        /* 空格符 - 缩小为原来的1/3 */
+        .spacer {
+            display: inline-block;
+            width: 3px;
+            height: 1px;
+        }
+        
+        /* 小节线 */
+        .barline {
+            width: 2px;
+            height: 40px;
+            background: #333;
+            margin: 0 5px; /* 减少小节线两侧间距 */
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 反复记号 */
+        .repeat-sign {
+            font-size: var(--score-font-size, 24px);
+            font-weight: bold;
+            margin: 0 3px; /* 减少间距 */
+        }
+        
+        /* 休止符 */
+        .rest {
+            font-size: var(--score-font-size, 24px);
+            color: #666;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 2px;
+        }
+        
+        /* 光标 */
+        .cursor {
+            width: 3px;
+            height: 40px;
+            background: #ff4444;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        /* 预览 */
+        .current-selection {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 8px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            margin: 5px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 连音组状态提示 */
+        .beam-status {
+            margin-top: 5px;
+            padding: 5px;
+            background: #fff3e0;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 11px;
+            display: none;
+            color: #ff9800;
+        }
+        
+        .beam-status.active {
+            display: block;
+        }
+        
+        /* 连音线样式 */
+        .tie-selectable {
+            transition: all 0.2s;
+        }
+        
+        .tie-selectable:hover {
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 4px;
+        }
+        
+        .tie-first-selected {
+            background: rgba(74, 144, 226, 0.3) !important;
+            border-radius: 4px;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                background: rgba(74, 144, 226, 0.3);
+            }
+            50% {
+                background: rgba(74, 144, 226, 0.5);
+            }
+        }
+        
+        .tie-line-svg {
+            z-index: 10;
+        }
+        
+        /* 页面指示器 */
+        .page-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 10px;
+            color: #999;
+        }
+
+        /* 响应式布局 */
+        @media screen and (max-width: 768px) {
+            .container {
+                overflow-x: auto;
+                min-width: 100%;
+            }
+            
+            .control-panel {
+                min-width: 250px;
+                max-width: 70vw;
+                overflow-x: auto;
+            }
+            
+            .editor-area {
+                min-width: 300px;
+                overflow-x: auto;
+            }
+            
+            .score-page {
+                width: 100%;
+                min-width: 600px;
+                padding: 10mm;
+                transform-origin: top left;
+            }
+            
+            .toolbar {
+                overflow-x: auto;
+                white-space: nowrap;
+                min-width: 500px;
+            }
+            
+            .font-size-control {
+                margin-left: 10px;
+            }
+            
+            /* 移动端字体调整 */
+            .arrow-btn {
+                height: 45px;
+                font-size: 11px;
+            }
+            
+            .arrow-symbol {
+                font-size: 18px;
+            }
+            
+            .duration-btn, .modifier-btn {
+                font-size: 10px;
+                padding: 5px 2px;
+            }
+        }
+
+        /* 支持横向滚动 */
+        .control-panel::-webkit-scrollbar,
+        .editor-area::-webkit-scrollbar,
+        .score-container::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .control-panel::-webkit-scrollbar-track,
+        .editor-area::-webkit-scrollbar-track,
+        .score-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb,
+        .editor-area::-webkit-scrollbar-thumb,
+        .score-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb:hover,
+        .editor-area::-webkit-scrollbar-thumb:hover,
+        .score-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* 打印样式 */
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .container {
+                display: block;
+            }
+            
+            .control-panel,
+            .toolbar,
+            .resize-handle {
+                display: none !important;
+            }
+            
+            .editor-area {
+                width: 100%;
+            }
+            
+            .score-container {
+                padding: 0;
+                background: white;
+            }
+            
+            .score-page {
+                width: 100%;
+                height: auto;
+                margin: 0;
+                padding: 15mm;
+                box-shadow: none;
+                page-break-after: always;
+            }
+            
+            .score-line {
+                border-style: solid;
+                border-width: 1px;
+                border-color: #ddd;
+            }
+            
+            .score-info input {
+                border: none;
+            }
+            
+            .page-indicator {
+                display: none;
+            }
+        }
+        
+        @page {
+            size: A4;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG定义区 - 8个方向的箭头 -->
+    <svg style="display: none;">
+        <defs>
+            <!-- 右箭头 → -->
+            <symbol id="arrow-right" viewBox="0 0 100 100">
+                <path d="M10,50 L70,50 M50,30 L70,50 L50,70" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            
+            <!-- 右上箭头 ↗ -->
+            <symbol id="arrow-right-up" viewBox="0 0 100 100">
+                <path d="M20,80 L70,30 M50,30 L70,30 L70,50" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            
+            <!-- 上箭头 ↑ -->
+            <symbol id="arrow-up" viewBox="0 0 100 100">
+                <path d="M50,90 L50,30 M30,50 L50,30 L70,50" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            
+            <!-- 右下箭头 ↘ -->
+            <symbol id="arrow-right-down" viewBox="0 0 100 100">
+                <path d="M20,20 L70,70 M50,70 L70,70 L70,50" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            
+            <!-- 下箭头 ↓ -->
+            <symbol id="arrow-down" viewBox="0 0 100 100">
+                <path d="M50,10 L50,70 M30,50 L50,70 L70,50" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            
+            <!-- 左下箭头 ↙ -->
+            <symbol id="arrow-left-down" viewBox="0 0 100 100">
+                <path d="M80,20 L30,70 M30,50 L30,70 L50,70" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            
+            <!-- 左箭头 ← -->
+            <symbol id="arrow-left" viewBox="0 0 100 100">
+                <path d="M90,50 L30,50 M50,30 L30,50 L50,70" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            
+            <!-- 左上箭头 ↖ -->
+            <symbol id="arrow-left-up" viewBox="0 0 100 100">
+                <path d="M80,80 L30,30 M30,50 L30,30 L50,30" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+        </defs>
+    </svg>
+    
+    <div class="container">
+        <!-- 左侧控制面板 -->
+        <div class="control-panel">
+            <!-- 当前选择预览 -->
+            <div class="panel-section">
+                <div class="section-title">当前选择预览</div>
+                <div class="current-selection" id="currentPreview">请选择音符</div>
+            </div>
+            
+            <!-- 时值选择 -->
+            <div class="panel-section">
+                <div class="section-title">1️⃣ 时值选择</div>
+                <div class="duration-grid">
+                    <button class="duration-btn active" data-duration="quarter">
+                        <div class="duration-display">♩</div>
+                        <div>四分</div>
+                    </button>
+                    <button class="duration-btn" data-duration="eighth">
+                        <div class="duration-display">♪</div>
+                        <div>八分</div>
+                    </button>
+                    <button class="duration-btn" data-duration="sixteenth">
+                        <div class="duration-display">♬</div>
+                        <div>十六分</div>
+                    </button>
+                    <button class="duration-btn" data-duration="half">
+                        <div class="duration-display">𝅗𝅥</div>
+                        <div>二分</div>
+                    </button>
+                    <button class="duration-btn" data-duration="whole">
+                        <div class="duration-display">𝅝</div>
+                        <div>全音符</div>
+                    </button>
+                    <button class="duration-btn special-btn" id="tripletBtn" data-duration="triplet">
+                        <div class="duration-display">⌒3⌒</div>
+                        <div>三连音</div>
+                    </button>
+                </div>
+                
+                <div class="triplet-status" id="tripletStatus">
+                    三连音模式: <span id="tripletCount">0</span>/3
+                </div>
+                
+                <div class="dot-checkbox">
+                    <input type="checkbox" id="dotted" onchange="updateDotted()">
+                    <label for="dotted">附点（延长一半时值）</label>
+                </div>
+                
+                <div class="beam-control">
+                    <button class="beam-btn" id="beamConnect">连接减时线</button>
+                    <button class="beam-btn active" id="beamSeparate">断开减时线</button>
+                </div>
+                <button class="beam-btn" id="beamComplete" style="display:none; width: 100%; margin-top: 5px;">完成连音组</button>
+                
+                <div class="beam-status" id="beamStatus">
+                    连音组: <span id="beamCount">0</span>个音符
+                </div>
+                
+                <div class="cursor-control">
+                    <button class="cursor-btn" onclick="moveCursor('left')">←</button>
+                    <button class="cursor-btn" onclick="moveCursor('right')">→</button>
+                </div>
+                
+                <!-- 新增：间距调整控制 -->
+                <div class="spacing-control">
+                    <button class="spacing-btn" onclick="adjustSelectedSpacing(-1)">← 缩进</button>
+                    <button class="spacing-btn" onclick="adjustSelectedSpacing(1)">扩展 →</button>
+                </div>
+            </div>
+            
+            <!-- 变音选择 -->
+            <div class="panel-section">
+                <div class="section-title">2️⃣ 变音选择（可选）</div>
+                <div class="modifier-grid">
+                    <button class="modifier-btn active" data-modifier="none">
+                        <div class="modifier-example">
+                            <svg class="arrow-svg small"><use href="#arrow-up"/></svg>
+                        </div>
+                        <div>标准</div>
+                    </button>
+                    <button class="modifier-btn" data-modifier="octave-down">
+                        <div class="modifier-example">
+                            -<svg class="arrow-svg small"><use href="#arrow-up"/></svg>
+                        </div>
+                        <div>降八度</div>
+                    </button>
+                    <button class="modifier-btn" data-modifier="octave-up">
+                        <div class="modifier-example">
+                            <svg class="arrow-svg small"><use href="#arrow-up"/></svg>-
+                        </div>
+                        <div>升八度</div>
+                    </button>
+                    <button class="modifier-btn" data-modifier="flat">
+                        <div class="modifier-example">
+                            _<svg class="arrow-svg small"><use href="#arrow-up"/></svg>
+                        </div>
+                        <div>降半音♭</div>
+                    </button>
+                    <button class="modifier-btn" data-modifier="sharp">
+                        <div class="modifier-example">
+                            <svg class="arrow-svg small"><use href="#arrow-up"/></svg>_
+                        </div>
+                        <div>升半音#</div>
+                    </button>
+                    <button class="modifier-btn" data-modifier="down-down">
+                        <div class="modifier-example">
+                            =<svg class="arrow-svg small"><use href="#arrow-up"/></svg>
+                        </div>
+                        <div>降八降半</div>
+                    </button>
+                    <button class="modifier-btn" data-modifier="up-up">
+                        <div class="modifier-example">
+                            <svg class="arrow-svg small"><use href="#arrow-up"/></svg>=
+                        </div>
+                        <div>升八升半</div>
+                    </button>
+                    <button class="modifier-btn" data-modifier="down-up">
+                        <div class="modifier-example">
+                            -<svg class="arrow-svg small"><use href="#arrow-up"/></svg>_
+                        </div>
+                        <div>降八升半</div>
+                    </button>
+                    <button class="modifier-btn" data-modifier="up-down">
+                        <div class="modifier-example">
+                            _<svg class="arrow-svg small"><use href="#arrow-up"/></svg>-
+                        </div>
+                        <div>升八降半</div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 音符选择 -->
+            <div class="panel-section">
+                <div class="section-title">3️⃣ 音符选择（点击输入）</div>
+                <div class="arrow-grid">
+                    <button class="arrow-btn" data-arrow="up" data-note="1" data-svg="arrow-up">
+                        <span class="arrow-symbol">
+                            <svg class="arrow-svg"><use href="#arrow-up"/></svg>
+                        </span>
+                        <span class="arrow-note">1 do</span>
+                    </button>
+                    <button class="arrow-btn" data-arrow="right-up" data-note="2" data-svg="arrow-right-up">
+                        <span class="arrow-symbol">
+                            <svg class="arrow-svg"><use href="#arrow-right-up"/></svg>
+                        </span>
+                        <span class="arrow-note">2 re</span>
+                    </button>
+                    <button class="arrow-btn" data-arrow="right" data-note="3" data-svg="arrow-right">
+                        <span class="arrow-symbol">
+                            <svg class="arrow-svg"><use href="#arrow-right"/></svg>
+                        </span>
+                        <span class="arrow-note">3 mi</span>
+                    </button>
+                    <button class="arrow-btn" data-arrow="right-down" data-note="4" data-svg="arrow-right-down">
+                        <span class="arrow-symbol">
+                            <svg class="arrow-svg"><use href="#arrow-right-down"/></svg>
+                        </span>
+                        <span class="arrow-note">4 fa</span>
+                    </button>
+                    <button class="arrow-btn" data-arrow="down" data-note="5" data-svg="arrow-down">
+                        <span class="arrow-symbol">
+                            <svg class="arrow-svg"><use href="#arrow-down"/></svg>
+                        </span>
+                        <span class="arrow-note">5 sol</span>
+                    </button>
+                    <button class="arrow-btn" data-arrow="left-down" data-note="6" data-svg="arrow-left-down">
+                        <span class="arrow-symbol">
+                            <svg class="arrow-svg"><use href="#arrow-left-down"/></svg>
+                        </span>
+                        <span class="arrow-note">6 la</span>
+                    </button>
+                    <button class="arrow-btn" data-arrow="left" data-note="7" data-svg="arrow-left">
+                        <span class="arrow-symbol">
+                            <svg class="arrow-svg"><use href="#arrow-left"/></svg>
+                        </span>
+                        <span class="arrow-note">7 si</span>
+                    </button>
+                    <button class="arrow-btn" data-arrow="left-up" data-note="1'" data-svg="arrow-left-up">
+                        <span class="arrow-symbol">
+                            <svg class="arrow-svg"><use href="#arrow-left-up"/></svg>
+                        </span>
+                        <span class="arrow-note">高1do</span>
+                    </button>
+                    <button class="arrow-btn" data-arrow="○" data-note="0">
+                        <span class="arrow-symbol">○</span>
+                        <span class="arrow-note">0 休止</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 其他功能 -->
+            <div class="panel-section">
+                <div class="section-title">其他功能</div>
+                <div class="other-controls">
+                    <button class="other-btn" onclick="insertTie()">⌒ 连音线模式</button>
+                    <button class="other-btn" onclick="insertSpacer()">⎵ 空格</button>
+                    <button class="other-btn" onclick="centerLine()">⊡ 居中对齐</button>
+                    <button class="other-btn" onclick="insertAnnotation('R')">R 标注</button>
+                    <button class="other-btn" onclick="insertAnnotation('L')">L 标注</button>
+                    <button class="other-btn" onclick="insertBox('盒1')">盒1 标注</button>
+                    <button class="other-btn" onclick="insertBox('盒2')">盒2 标注</button>
+                    <button class="other-btn" onclick="insertBarline()">| 小节线</button>
+                    <button class="other-btn" onclick="insertDoubleBar()">|| 终止线</button>
+                    <button class="other-btn" onclick="insertRepeat(':|')">:| 前反复</button>
+                    <button class="other-btn" onclick="insertRepeat('|:')">|: 后反复</button>
+                    <button class="other-btn" onclick="deleteLast()">删除</button>
+                    <button class="other-btn" onclick="clearLine()">清空行</button>
+                    <button class="other-btn" onclick="deleteLine()">删除行</button>
+                    <button class="other-btn" onclick="newLine()">新行</button>
+                    <button class="other-btn" onclick="newPage()">新页</button>
+                    <button class="other-btn" onclick="deletePage()">删除页</button>
+                    <button class="other-btn" onclick="toggleMobileView()" id="mobileToggle">📱 隐藏面板</button>
+                </div>
+                
+                <!-- 行距调整 -->
+                <div class="line-spacing-control">
+                    <div class="section-title">行距调整</div>
+                    <select id="lineSelect">
+                        <option value="1-1">第1页-第1行</option>
+                    </select>
+                    <button onclick="adjustLineSpacing('top', -5)">↑减少上距</button>
+                    <button onclick="adjustLineSpacing('top', 5)">↓增加上距</button>
+                    <button onclick="adjustLineSpacing('bottom', -5)">↑减少下距</button>
+                    <button onclick="adjustLineSpacing('bottom', 5)">↓增加下距</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 可拖动分隔条 -->
+        <div class="resize-handle" id="resizeHandle"></div>
+        
+        <!-- 右侧编辑区 -->
+        <div class="editor-area">
+            <!-- 工具栏 -->
+            <div class="toolbar">
+                <input type="text" id="title" placeholder="输入曲名" oninput="updateTitle()">
+                <select id="tempo">
+                    <option value="60">♩=60</option>
+                    <option value="80">♩=80</option>
+                    <option value="100">♩=100</option>
+                    <option value="120" selected>♩=120</option>
+                    <option value="140">♩=140</option>
+                </select>
+                <button class="toolbar-btn" onclick="saveScore()">保存</button>
+                <button class="toolbar-btn" onclick="loadScore()">加载</button>
+                <button class="toolbar-btn" onclick="exportScore()">导出</button>
+                <button class="toolbar-btn" onclick="printScore()">打印</button>
+                
+                <div class="font-size-control">
+                    <label>字体大小:</label>
+                    <input type="range" id="fontSize" min="16" max="40" value="24" oninput="updateFontSize(this.value)">
+                    <span id="fontSizeValue">24px</span>
+                </div>
+            </div>
+            
+            <!-- 乐谱编辑区 -->
+            <div class="score-container" id="scoreContainer">
+                <div class="score-page" id="page-1" data-page="1">
+                    <h1 class="score-title" id="scoreTitle">未命名乐谱</h1>
+                    <div class="score-info">
+                        <input type="text" id="scoreInfo" placeholder="调号：C大调  拍号：4/4  速度：Andante" />
+                    </div>
+                    <div class="score-content">
+                        <div id="scoreLines">
+                            <div class="score-line active" data-line="1" data-page="1">
+                                <div class="cursor"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="page-indicator">第 1 页</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 全局状态
+        let currentDuration = 'quarter';
+        let currentModifier = 'none';
+        let isDotted = false;
+        let beamMode = 'separate';
+        let currentLine = 1;
+        let currentPage = 1;
+        let beamGroup = [];
+        let fontSize = 24;
+        let lastNote = null;
+        let isTripletMode = false;
+        let tripletGroup = [];
+        let pendingAnnotation = null;
+        let pendingBox = null;
+        let selectedNote = null;
+        let tieMode = false;
+        let firstTieNote = null;
+        let tieLinesData = [];
+        
+        // 箭头SVG映射
+        const arrowSvgMap = {
+            'right': 'arrow-right',
+            'right-up': 'arrow-right-up',
+            'up': 'arrow-up',
+            'right-down': 'arrow-right-down',
+            'down': 'arrow-down',
+            'left-down': 'arrow-left-down',
+            'left': 'arrow-left',
+            'left-up': 'arrow-left-up'
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initDurationButtons();
+            initModifierButtons();
+            initArrowButtons();
+            initBeamControl();
+            initKeyboardShortcuts();
+            initLineClickHandlers();
+            initNoteSelection();
+            initResizeHandle();
+            initTouchSupport();
+            updatePreview();
+            document.documentElement.style.setProperty('--arrow-size', '24px');
+        });
+
+        // 初始化可拖动分隔条
+        function initResizeHandle() {
+            const resizeHandle = document.getElementById('resizeHandle');
+            const controlPanel = document.querySelector('.control-panel');
+            const container = document.querySelector('.container');
+            
+            if (!resizeHandle) return;
+            
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+            
+            // 鼠标事件
+            resizeHandle.addEventListener('mousedown', initResize);
+            
+            // 触摸事件（移动端）
+            resizeHandle.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                initResize({clientX: touch.clientX});
+            });
+            
+            function initResize(e) {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = controlPanel.offsetWidth;
+                
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('mouseup', stopResize);
+                document.addEventListener('touchmove', touchResize);
+                document.addEventListener('touchend', stopResize);
+                
+                // 防止选中文本
+                document.body.style.userSelect = 'none';
+            }
+            
+            function resize(e) {
+                if (!isResizing) return;
+                
+                const newWidth = startWidth + (e.clientX - startX);
+                if (newWidth > 150 && newWidth < window.innerWidth * 0.7) {
+                    controlPanel.style.width = newWidth + 'px';
+                }
+            }
+            
+            function touchResize(e) {
+                if (!isResizing) return;
+                const touch = e.touches[0];
+                resize({clientX: touch.clientX});
+            }
+            
+            function stopResize() {
+                isResizing = false;
+                document.removeEventListener('mousemove', resize);
+                document.removeEventListener('mouseup', stopResize);
+                document.removeEventListener('touchmove', touchResize);
+                document.removeEventListener('touchend', stopResize);
+                document.body.style.userSelect = '';
+            }
+        }
+
+        // 添加触摸支持
+        function initTouchSupport() {
+            // 为箭头按钮添加触摸反馈
+            document.querySelectorAll('.arrow-btn, .duration-btn, .modifier-btn, .other-btn').forEach(btn => {
+                btn.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.95)';
+                });
+                
+                btn.addEventListener('touchend', function() {
+                    this.style.transform = '';
+                });
+            });
+            
+            // 改善移动端滚动性能
+            const scrollElements = ['.control-panel', '.editor-area', '.score-container'];
+            scrollElements.forEach(selector => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.style.webkitOverflowScrolling = 'touch';
+                    element.style.overflowScrolling = 'touch';
+                }
+            });
+            
+            // 双指缩放乐谱
+            let initialDistance = 0;
+            let currentScale = 1;
+            
+            const scoreContainer = document.getElementById('scoreContainer');
+            
+            scoreContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    initialDistance = getDistance(e.touches[0], e.touches[1]);
+                }
+            });
+            
+            scoreContainer.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                    const scale = currentDistance / initialDistance;
+                    
+                    currentScale = Math.min(Math.max(0.5, currentScale * scale), 2);
+                    
+                    document.querySelectorAll('.score-page').forEach(page => {
+                        page.style.transform = `scale(${currentScale})`;
+                    });
+                    
+                    initialDistance = currentDistance;
+                }
+            });
+            
+            function getDistance(touch1, touch2) {
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+        }
+
+        // 移动视图切换
+        function toggleMobileView() {
+            const container = document.querySelector('.container');
+            const controlPanel = document.querySelector('.control-panel');
+            const resizeHandle = document.getElementById('resizeHandle');
+            
+            if (controlPanel.style.display === 'none') {
+                controlPanel.style.display = 'block';
+                resizeHandle.style.display = 'block';
+                document.getElementById('mobileToggle').textContent = '📱 隐藏面板';
+            } else {
+                controlPanel.style.display = 'none';
+                resizeHandle.style.display = 'none';
+                document.getElementById('mobileToggle').textContent = '📱 显示面板';
+            }
+        }
+        
+        // 检查当前页是否需要新页
+        function checkPageOverflow() {
+            const currentPageElement = document.getElementById(`page-${currentPage}`);
+            const scoreContent = currentPageElement.querySelector('.score-content');
+            
+            // 获取页面高度（A4纸减去边距）
+            const maxHeight = 257 * 3.78; // 257mm转换为像素（约970px）
+            
+            if (scoreContent.scrollHeight > maxHeight) {
+                // 需要新页
+                const lastLine = scoreContent.lastElementChild;
+                if (lastLine && lastLine.classList.contains('score-line')) {
+                    // 将最后一行移到新页
+                    createNewPage();
+                    const newPage = document.getElementById(`page-${currentPage}`);
+                    const newScoreLines = newPage.querySelector('#scoreLines');
+                    newScoreLines.appendChild(lastLine);
+                }
+            }
+        }
+        
+        // 创建新页
+        function createNewPage() {
+            currentPage++;
+            const container = document.getElementById('scoreContainer');
+            
+            const newPageHtml = `
+                <div class="score-page" id="page-${currentPage}" data-page="${currentPage}">
+                    <div class="score-content">
+                        <div id="scoreLines">
+                        </div>
+                    </div>
+                    <div class="page-indicator">第 ${currentPage} 页</div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', newPageHtml);
+            updateLineSelector();
+        }
+        
+        // 手动添加新页
+        function newPage() {
+            if (beamGroup.length > 0) {
+                alert('请先完成当前连音组或切换到断开减时线模式');
+                return;
+            }
+            
+            createNewPage();
+            newLine(true); // 在新页创建新行
+        }
+        
+        // 获取当前活动页
+        function getCurrentPage() {
+            const activeLine = document.querySelector('.score-line.active');
+            if (activeLine) {
+                const pageNum = activeLine.dataset.page || 1;
+                return document.getElementById(`page-${pageNum}`);
+            }
+            return document.getElementById(`page-${currentPage}`);
+        }
+        
+        // 居中对齐功能
+        function centerLine() {
+            const activeLine = document.querySelector('.score-line.active');
+            if (!activeLine) {
+                alert('请先选择要居中的行');
+                return;
+            }
+            
+            // 检查是否有内容（排除光标）
+            const hasContent = Array.from(activeLine.children).some(child => 
+                !child.classList.contains('cursor') && !child.classList.contains('tie-line-svg')
+            );
+            
+            if (!hasContent) {
+                alert('当前行没有内容');
+                return;
+            }
+            
+            // 切换居中状态
+            if (activeLine.classList.contains('centered')) {
+                // 取消居中
+                activeLine.classList.remove('centered');
+                
+                // 恢复原始间距
+                const noteGroups = activeLine.querySelectorAll('.note-group, .triplet-group, .beam-group, .rest, .barline, .repeat-sign');
+                noteGroups.forEach(group => {
+                    group.style.marginLeft = '';
+                    group.style.marginRight = '';
+                });
+            } else {
+                // 应用居中
+                activeLine.classList.add('centered');
+                
+                // 智能调整间距
+                const totalElements = activeLine.querySelectorAll('.note-group, .triplet-group, .beam-group, .rest, .barline, .repeat-sign, .spacer').length;
+                
+                // 根据元素数量智能调整间距
+                if (totalElements > 20) {
+                    // 很多音符时，使用更紧凑的间距
+                    activeLine.style.gap = '3px';
+                } else if (totalElements > 10) {
+                    // 中等数量音符
+                    activeLine.style.gap = '5px';
+                } else {
+                    // 少量音符，可以有更多间距
+                    activeLine.style.gap = '8px';
+                }
+                
+                // 自动调整小节线两侧的间距
+                const barlines = activeLine.querySelectorAll('.barline');
+                barlines.forEach(barline => {
+                    barline.style.marginLeft = '10px';
+                    barline.style.marginRight = '10px';
+                });
+                
+                // 自动调整反复记号的间距
+                const repeatSigns = activeLine.querySelectorAll('.repeat-sign');
+                repeatSigns.forEach(sign => {
+                    sign.style.marginLeft = '8px';
+                    sign.style.marginRight = '8px';
+                });
+            }
+        }
+        
+        // 初始化行点击处理
+        function initLineClickHandlers() {
+            const firstLine = document.querySelector('.score-line[data-line="1"]');
+            if (firstLine) {
+                firstLine.addEventListener('click', function() {
+                    document.querySelectorAll('.score-line').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            }
+            
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('score-line')) {
+                    document.querySelectorAll('.score-line').forEach(l => l.classList.remove('active'));
+                    e.target.classList.add('active');
+                }
+            });
+        }
+        
+        // 初始化音符选择
+        function initNoteSelection() {
+            document.addEventListener('click', function(e) {
+                const noteGroup = e.target.closest('.note-group');
+                
+                if (noteGroup) {
+                    if (tieMode) {
+                        if (handleTieSelection(noteGroup)) {
+                            return;
+                        }
+                    }
+                    
+                    document.querySelectorAll('.note-group.selected').forEach(n => {
+                        n.classList.remove('selected');
+                    });
+                    
+                    noteGroup.classList.add('selected');
+                    selectedNote = noteGroup;
+                } else if (!e.target.closest('.spacing-btn') && !e.target.closest('.other-btn')) {
+                    document.querySelectorAll('.note-group.selected').forEach(n => {
+                        n.classList.remove('selected');
+                    });
+                    selectedNote = null;
+                    
+                    if (tieMode && !e.target.closest('.tie-selectable')) {
+                        exitTieMode();
+                    }
+                }
+            });
+        }
+        
+        // 调整选中音符的间距
+        function adjustSelectedSpacing(direction) {
+            if (!selectedNote) {
+                alert('请先点击选择一个音符');
+                return;
+            }
+            
+            const noteContent = selectedNote.querySelector('.note-content');
+            if (!noteContent) return;
+            
+            const modifierLeft = noteContent.querySelector('.note-modifier-left');
+            const modifierRight = noteContent.querySelector('.note-modifier-right');
+            
+            if (modifierLeft) {
+                let currentMargin = parseInt(modifierLeft.style.marginRight || '1');
+                modifierLeft.style.marginRight = Math.max(0, currentMargin + direction) + 'px';
+            }
+            
+            if (modifierRight) {
+                let currentMargin = parseInt(modifierRight.style.marginLeft || '1');
+                modifierRight.style.marginLeft = Math.max(0, currentMargin + direction) + 'px';
+            }
+        }
+        
+        // 初始化时值按钮
+        function initDurationButtons() {
+            document.querySelectorAll('.duration-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (this.dataset.duration === 'triplet') {
+                        toggleTriplet();
+                    } else {
+                        document.querySelectorAll('.duration-btn').forEach(b => {
+                            if (b.dataset.duration !== 'triplet') {
+                                b.classList.remove('active');
+                            }
+                        });
+                        this.classList.add('active');
+                        currentDuration = this.dataset.duration;
+                        updatePreview();
+                    }
+                });
+            });
+        }
+        
+        // 初始化变音按钮
+        function initModifierButtons() {
+            document.querySelectorAll('.modifier-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.modifier-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentModifier = this.dataset.modifier;
+                    updatePreview();
+                });
+            });
+        }
+        
+        // 初始化箭头按钮
+        function initArrowButtons() {
+            document.querySelectorAll('.arrow-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const arrow = this.dataset.arrow;
+                    const note = this.dataset.note;
+                    const svg = this.dataset.svg;
+                    
+                    if (arrow === '○') {
+                        insertRest();
+                    } else {
+                        lastNote = {
+                            arrow: arrow,
+                            note: note,
+                            svg: svg,
+                            modifier: currentModifier
+                        };
+                        
+                        if (isTripletMode) {
+                            insertTripletNote(arrow, note, svg);
+                        } else {
+                            insertNote(arrow, note, svg);
+                        }
+                    }
+                });
+            });
+        }
+        
+        // 移动光标
+        function moveCursor(direction) {
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            
+            if (direction === 'left') {
+                const prev = cursor.previousElementSibling;
+                if (prev) {
+                    activeLine.insertBefore(cursor, prev);
+                }
+            } else if (direction === 'right') {
+                const next = cursor.nextElementSibling;
+                if (next) {
+                    activeLine.insertBefore(cursor, next.nextElementSibling);
+                }
+            }
+        }
+        
+        // 插入标注
+        function insertAnnotation(type) {
+            pendingAnnotation = type;
+        }
+        
+        // 插入盒子标注
+        function insertBox(type) {
+            pendingBox = type;
+        }
+        
+        // 插入同音连线符号
+        function insertTie() {
+            if (!tieMode) {
+                tieMode = true;
+                firstTieNote = null;
+                alert('请点击第一个音符，然后点击第二个音符来添加连音线');
+                document.querySelectorAll('.note-group').forEach(note => {
+                    note.style.cursor = 'crosshair';
+                    note.classList.add('tie-selectable');
+                });
+            } else {
+                exitTieMode();
+            }
+        }
+        
+        // 退出连音线模式
+        function exitTieMode() {
+            tieMode = false;
+            firstTieNote = null;
+            document.querySelectorAll('.note-group').forEach(note => {
+                note.style.cursor = 'pointer';
+                note.classList.remove('tie-selectable');
+                note.classList.remove('tie-first-selected');
+            });
+        }
+        
+        // 处理连音线选择
+        function handleTieSelection(noteElement) {
+            if (!tieMode) return false;
+            
+            if (!firstTieNote) {
+                firstTieNote = noteElement;
+                noteElement.classList.add('tie-first-selected');
+                return true;
+            } else if (noteElement !== firstTieNote) {
+                createTieLine(firstTieNote, noteElement);
+                exitTieMode();
+                return true;
+            }
+            return false;
+        }
+        
+        // 创建连音线
+        function createTieLine(note1, note2) {
+            const line = document.querySelector('.score-line.active');
+            if (!line) return;
+            
+            const rect1 = note1.getBoundingClientRect();
+            const rect2 = note2.getBoundingClientRect();
+            const lineRect = line.getBoundingClientRect();
+            
+            const x1 = rect1.left + rect1.width/2 - lineRect.left;
+            const x2 = rect2.left + rect2.width/2 - lineRect.left;
+            const y = rect1.top - lineRect.top - 15;
+            
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.style.position = 'absolute';
+            svg.style.left = Math.min(x1, x2) + 'px';
+            svg.style.top = y + 'px';
+            svg.style.width = Math.abs(x2 - x1) + 'px';
+            svg.style.height = '20px';
+            svg.style.pointerEvents = 'none';
+            svg.style.overflow = 'visible';
+            svg.classList.add('tie-line-svg');
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const startX = x1 < x2 ? 0 : Math.abs(x2 - x1);
+            const endX = x1 < x2 ? Math.abs(x2 - x1) : 0;
+            const midX = Math.abs(endX - startX) / 2;
+            const d = `M ${startX} 15 Q ${midX} 5, ${endX} 15`;
+            path.setAttribute('d', d);
+            path.setAttribute('stroke', '#333');
+            path.setAttribute('stroke-width', '1.5');
+            path.setAttribute('fill', 'none');
+            
+            svg.appendChild(path);
+            line.appendChild(svg);
+            
+            tieLinesData.push({
+                note1: note1,
+                note2: note2,
+                svg: svg,
+                line: line
+            });
+        }
+        
+        // 切换三连音模式
+        function toggleTriplet() {
+            isTripletMode = !isTripletMode;
+            const btn = document.getElementById('tripletBtn');
+            const status = document.getElementById('tripletStatus');
+            
+            if (isTripletMode) {
+                btn.classList.add('active');
+                status.classList.add('active');
+                tripletGroup = [];
+                updateTripletStatus();
+            } else {
+                btn.classList.remove('active');
+                status.classList.remove('active');
+                tripletGroup = [];
+            }
+        }
+        
+        // 更新三连音状态
+        function updateTripletStatus() {
+            document.getElementById('tripletCount').textContent = tripletGroup.length;
+        }
+        
+        // 更新连音组状态
+        function updateBeamStatus() {
+            document.getElementById('beamCount').textContent = beamGroup.length;
+        }
+        
+        // 插入三连音音符
+        function insertTripletNote(arrow, note, svg) {
+            const noteElement = createNoteElement(arrow, note, svg);
+            tripletGroup.push(noteElement);
+            updateTripletStatus();
+            
+            if (tripletGroup.length === 3) {
+                const activeLine = document.querySelector('.score-line.active');
+                const cursor = activeLine.querySelector('.cursor');
+                
+                const tripletContainer = document.createElement('div');
+                tripletContainer.className = 'triplet-group';
+                
+                const bracket = document.createElement('div');
+                bracket.className = 'triplet-bracket';
+                bracket.innerHTML = '⌒3⌒';
+                
+                const notesContainer = document.createElement('div');
+                notesContainer.className = 'triplet-notes';
+                
+                tripletGroup.forEach(n => {
+                    notesContainer.appendChild(n);
+                });
+                
+                tripletContainer.appendChild(bracket);
+                tripletContainer.appendChild(notesContainer);
+                
+                activeLine.insertBefore(tripletContainer, cursor);
+                
+                tripletGroup = [];
+                isTripletMode = false;
+                document.getElementById('tripletBtn').classList.remove('active');
+                document.getElementById('tripletStatus').classList.remove('active');
+                
+                checkPageOverflow(); // 检查是否需要新页
+            }
+        }
+        
+        // 行距调整功能
+        function adjustLineSpacing(type, value) {
+            const lineValue = document.getElementById('lineSelect').value;
+            const [pageNum, lineNum] = lineValue.split('-');
+            const line = document.querySelector(`.score-line[data-page="${pageNum}"][data-line="${lineNum}"]`);
+            
+            if (line) {
+                if (type === 'top') {
+                    let currentTop = parseInt(line.style.marginTop || 0);
+                    line.style.marginTop = Math.max(0, currentTop + value) + 'px';
+                } else if (type === 'bottom') {
+                    let currentBottom = parseInt(line.style.marginBottom || 20);
+                    line.style.marginBottom = Math.max(0, currentBottom + value) + 'px';
+                }
+            }
+        }
+        
+        // 更新行选择器
+        function updateLineSelector() {
+            const select = document.getElementById('lineSelect');
+            select.innerHTML = '';
+            
+            document.querySelectorAll('.score-line').forEach(line => {
+                const pageNum = line.dataset.page || 1;
+                const lineNum = line.dataset.line;
+                const option = document.createElement('option');
+                option.value = `${pageNum}-${lineNum}`;
+                option.textContent = `第${pageNum}页-第${lineNum}行`;
+                select.appendChild(option);
+            });
+        }
+        
+        // 初始化减时线控制
+        function initBeamControl() {
+            document.getElementById('beamConnect').addEventListener('click', function() {
+                beamMode = 'connect';
+                document.getElementById('beamSeparate').classList.remove('active');
+                this.classList.add('active');
+                document.getElementById('beamComplete').style.display = 'block';
+                document.getElementById('beamStatus').classList.add('active');
+                beamGroup = [];
+                updateBeamStatus();
+            });
+            
+            document.getElementById('beamSeparate').addEventListener('click', function() {
+                beamMode = 'separate';
+                document.getElementById('beamConnect').classList.remove('active');
+                this.classList.add('active');
+                document.getElementById('beamComplete').style.display = 'none';
+                document.getElementById('beamStatus').classList.remove('active');
+                beamGroup = [];
+            });
+            
+            document.getElementById('beamComplete').addEventListener('click', function() {
+                completeBeamGroup();
+            });
+        }
+        
+        // 手动完成连音组
+        function completeBeamGroup() {
+            if (beamGroup.length < 2) {
+                alert('至少需要2个音符才能形成连音组');
+                return;
+            }
+            
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            
+            const groupContainer = document.createElement('div');
+            groupContainer.className = 'beam-group';
+            
+            const notesContainer = document.createElement('div');
+            notesContainer.className = 'note-groups';
+            
+            beamGroup.forEach(noteData => {
+                const originalNote = document.querySelector(`[data-beam-id="${noteData.id}"]`);
+                if (originalNote) {
+                    originalNote.remove();
+                }
+                
+                const newNote = createNoteElementForBeam(noteData);
+                notesContainer.appendChild(newNote);
+            });
+            
+            groupContainer.appendChild(notesContainer);
+            
+            const smartBeams = createSmartBeams(beamGroup);
+            groupContainer.appendChild(smartBeams);
+            
+            activeLine.insertBefore(groupContainer, cursor);
+            beamGroup = [];
+            updateBeamStatus();
+            
+            checkPageOverflow(); // 检查是否需要新页
+        }
+        
+        // 创建智能减时线
+        function createSmartBeams(noteGroup) {
+            const beamContainer = document.createElement('div');
+            beamContainer.className = 'smart-beams';
+            
+            const hasEighthOrSixteenth = noteGroup.some(n => 
+                n.duration === 'eighth' || n.duration === 'sixteenth'
+            );
+            const sixteenthIndices = [];
+            noteGroup.forEach((note, index) => {
+                if (note.duration === 'sixteenth') {
+                    sixteenthIndices.push(index);
+                }
+            });
+            
+            if (hasEighthOrSixteenth) {
+                const beam1 = document.createElement('div');
+                beam1.className = 'connected-beam first';
+                beamContainer.appendChild(beam1);
+            }
+            
+            if (sixteenthIndices.length > 0) {
+                const groups = [];
+                let currentGroup = [];
+                
+                for (let i = 0; i < sixteenthIndices.length; i++) {
+                    const index = sixteenthIndices[i];
+                    
+                    if (currentGroup.length === 0) {
+                        currentGroup.push(index);
+                    } else {
+                        const lastIndex = currentGroup[currentGroup.length - 1];
+                        if (index === lastIndex + 1) {
+                            currentGroup.push(index);
+                        } else {
+                            if (currentGroup.length > 0) {
+                                groups.push(currentGroup);
+                            }
+                            currentGroup = [index];
+                        }
+                    }
+                }
+                
+                if (currentGroup.length > 0) {
+                    groups.push(currentGroup);
+                }
+                
+                groups.forEach(group => {
+                    if (group.length === 1) {
+                        const beam2 = document.createElement('div');
+                        beam2.className = 'connected-beam second partial';
+                        const noteWidth = 100 / noteGroup.length;
+                        beam2.style.left = (group[0] * noteWidth) + '%';
+                        beam2.style.width = noteWidth + '%';
+                        beamContainer.appendChild(beam2);
+                    } else {
+                        const beam2 = document.createElement('div');
+                        beam2.className = 'connected-beam second partial';
+                        const noteWidth = 100 / noteGroup.length;
+                        const startPos = group[0] * noteWidth;
+                        const endPos = (group[group.length - 1] + 1) * noteWidth;
+                        beam2.style.left = startPos + '%';
+                        beam2.style.width = (endPos - startPos) + '%';
+                        beamContainer.appendChild(beam2);
+                    }
+                });
+            }
+            
+            return beamContainer;
+        }
+        
+        // 创建用于连音组的音符元素
+        function createNoteElementForBeam(noteData) {
+            const noteGroup = document.createElement('div');
+            noteGroup.className = 'note-group';
+            
+            let noteHTML = '<div class="note-content">';
+            
+            // 处理左侧修饰符
+            if (noteData.modifier === 'flat') {
+                noteHTML += '<span class="note-modifier-left">_</span>';
+            } else if (noteData.modifier === 'octave-down') {
+                const isRightArrow = noteData.arrow === 'right';
+                const marginStyle = isRightArrow ? ' style="margin-right: 0px;"' : '';
+                noteHTML += `<span class="note-modifier-left"${marginStyle}>-</span>`;
+            } else if (noteData.modifier === 'down-down') {
+                noteHTML += '<span class="note-modifier-left">=</span>';
+            } else if (noteData.modifier === 'up-down') {
+                noteHTML += '<span class="note-modifier-left">_</span>';
+            } else if (noteData.modifier === 'down-up') {
+                const isRightArrow = noteData.arrow === 'right';
+                const marginStyle = isRightArrow ? ' style="margin-right: 0px;"' : '';
+                noteHTML += `<span class="note-modifier-left"${marginStyle}>-</span>`;
+            }
+            
+            noteHTML += `<span class="note-arrow"><svg class="arrow-svg large"><use href="#${noteData.svg}"/></svg></span>`;
+            
+            // 处理右侧修饰符
+            if (noteData.modifier === 'sharp') {
+                noteHTML += '<span class="note-modifier-right">_</span>';
+            } else if (noteData.modifier === 'octave-up') {
+                const isLeftArrow = noteData.arrow === 'left';
+                const marginStyle = isLeftArrow ? ' style="margin-left: 0px;"' : '';
+                noteHTML += `<span class="note-modifier-right"${marginStyle}>-</span>`;
+            } else if (noteData.modifier === 'up-up') {
+                noteHTML += '<span class="note-modifier-right">=</span>';
+            } else if (noteData.modifier === 'up-down') {
+                const isLeftArrow = noteData.arrow === 'left';
+                const marginStyle = isLeftArrow ? ' style="margin-left: 0px;"' : '';
+                noteHTML += `<span class="note-modifier-right"${marginStyle}>-</span>`;
+            } else if (noteData.modifier === 'down-up') {
+                noteHTML += '<span class="note-modifier-right">_</span>';
+            }
+            
+            if (noteData.dotted) {
+                noteHTML += '<span class="note-dot">·</span>';
+            }
+            
+            if (noteData.annotation) {
+                noteHTML += `<span class="note-annotation">${noteData.annotation}</span>`;
+            }
+            
+            if (noteData.box) {
+                noteHTML += `<span class="note-box">${noteData.box}</span>`;
+            }
+            
+            noteHTML += '</div>';
+            
+            noteGroup.innerHTML = noteHTML;
+            return noteGroup;
+        }
+        
+        // 更新附点状态
+        function updateDotted() {
+            isDotted = document.getElementById('dotted').checked;
+            updatePreview();
+        }
+        
+        // 更新预览
+        function updatePreview() {
+            const preview = document.getElementById('currentPreview');
+            let html = '';
+            
+            const arrow = '<svg class="arrow-svg"><use href="#arrow-right"/></svg>';
+            
+            if (currentModifier === 'sharp') {
+                html = `${arrow}_`;
+            } else if (currentModifier === 'flat') {
+                html = `_${arrow}`;
+            } else if (currentModifier === 'octave-up') {
+                html = `${arrow}-`;
+            } else if (currentModifier === 'octave-down') {
+                html = `-${arrow}`;
+            } else if (currentModifier === 'up-up') {
+                html = `${arrow}=`;
+            } else if (currentModifier === 'down-down') {
+                html = `=${arrow}`;
+            } else if (currentModifier === 'up-down') {
+                html = `_${arrow}-`;
+            } else if (currentModifier === 'down-up') {
+                html = `-${arrow}_`;
+            } else {
+                html = arrow;
+            }
+            
+            if (currentDuration === 'half') {
+                html += '~';
+            } else if (currentDuration === 'whole') {
+                html += '~~~';
+            }
+            
+            if (isDotted) {
+                html += '·';
+            }
+            
+            if (currentDuration === 'eighth' || currentDuration === 'sixteenth') {
+                html += '<div style="margin-top:2px;">';
+                if (currentDuration === 'eighth') {
+                    html += '─';
+                } else {
+                    html += '══';
+                }
+                html += '</div>';
+            }
+            
+            preview.innerHTML = html;
+        }
+        
+        // 插入音符
+        function insertNote(arrow, note, svg) {
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            
+            const noteElement = createNoteElement(arrow, note, svg);
+            
+            if (pendingAnnotation) {
+                const annotation = document.createElement('span');
+                annotation.className = 'note-annotation';
+                annotation.textContent = pendingAnnotation;
+                noteElement.querySelector('.note-content').appendChild(annotation);
+                pendingAnnotation = null;
+            }
+            
+            if (pendingBox) {
+                const box = document.createElement('span');
+                box.className = 'note-box';
+                box.textContent = pendingBox;
+                noteElement.querySelector('.note-content').appendChild(box);
+                pendingBox = null;
+            }
+            
+            if (beamMode === 'connect' && (currentDuration === 'eighth' || currentDuration === 'sixteenth')) {
+                const beamId = 'beam-' + Date.now() + '-' + Math.random();
+                noteElement.dataset.beamId = beamId;
+                
+                beamGroup.push({
+                    id: beamId,
+                    arrow: arrow,
+                    note: note,
+                    svg: svg,
+                    modifier: currentModifier,
+                    duration: currentDuration,
+                    dotted: isDotted,
+                    annotation: pendingAnnotation,
+                    box: pendingBox
+                });
+                
+                activeLine.insertBefore(noteElement, cursor);
+                updateBeamStatus();
+            } else {
+                activeLine.insertBefore(noteElement, cursor);
+            }
+            
+            checkPageOverflow(); // 检查是否需要新页
+        }
+        
+        // 创建音符元素  
+        function createNoteElement(arrow, note, svg) {
+            const noteGroup = document.createElement('div');
+            noteGroup.className = 'note-group';
+            
+            let noteHTML = '<div class="note-content">';
+            
+            // 处理左侧修饰符
+            if (currentModifier === 'flat') {
+                noteHTML += '<span class="note-modifier-left">_</span>';
+            } else if (currentModifier === 'octave-down') {
+                const isRightArrow = arrow === 'right';
+                const marginStyle = isRightArrow ? ' style="margin-right: 0px;"' : '';
+                noteHTML += `<span class="note-modifier-left"${marginStyle}>-</span>`;
+            } else if (currentModifier === 'down-down') {
+                noteHTML += '<span class="note-modifier-left">=</span>';
+            } else if (currentModifier === 'up-down') {
+                noteHTML += '<span class="note-modifier-left">_</span>';
+            } else if (currentModifier === 'down-up') {
+                const isRightArrow = arrow === 'right';
+                const marginStyle = isRightArrow ? ' style="margin-right: 0px;"' : '';
+                noteHTML += `<span class="note-modifier-left"${marginStyle}>-</span>`;
+            }
+            
+            noteHTML += `<span class="note-arrow"><svg class="arrow-svg large"><use href="#${svg}"/></svg></span>`;
+            
+            // 处理右侧修饰符
+            if (currentModifier === 'sharp') {
+                noteHTML += '<span class="note-modifier-right">_</span>';
+            } else if (currentModifier === 'octave-up') {
+                const isLeftArrow = arrow === 'left';
+                const marginStyle = isLeftArrow ? ' style="margin-left: 0px;"' : '';
+                noteHTML += `<span class="note-modifier-right"${marginStyle}>-</span>`;
+            } else if (currentModifier === 'up-up') {
+                noteHTML += '<span class="note-modifier-right">=</span>';
+            } else if (currentModifier === 'up-down') {
+                const isLeftArrow = arrow === 'left';
+                const marginStyle = isLeftArrow ? ' style="margin-left: 0px;"' : '';
+                noteHTML += `<span class="note-modifier-right"${marginStyle}>-</span>`;
+            } else if (currentModifier === 'down-up') {
+                noteHTML += '<span class="note-modifier-right">_</span>';
+            }
+            
+            if (currentDuration === 'half') {
+                noteHTML += '<span class="note-extend">~</span>';
+            } else if (currentDuration === 'whole') {
+                noteHTML += '<span class="note-extend">~~~</span>';
+            }
+            
+            if (isDotted) {
+                noteHTML += '<span class="note-dot">·</span>';
+            }
+            
+            noteHTML += '</div>';
+            
+            if ((beamMode === 'separate' || beamMode === 'connect') && 
+                (currentDuration === 'eighth' || currentDuration === 'sixteenth')) {
+                noteHTML += '<div class="beam-container">';
+                noteHTML += '<div class="beam-line"></div>';
+                if (currentDuration === 'sixteenth') {
+                    noteHTML += '<div class="beam-line second"></div>';
+                }
+                noteHTML += '</div>';
+            }
+            
+            noteGroup.innerHTML = noteHTML;
+            noteGroup.dataset.note = note;
+            noteGroup.dataset.duration = currentDuration;
+            noteGroup.dataset.modifier = currentModifier;
+            noteGroup.dataset.dotted = isDotted;
+            noteGroup.dataset.arrow = arrow;
+            noteGroup.dataset.svg = svg;
+            
+            return noteGroup;
+        }
+        
+        // 插入空格
+        function insertSpacer() {
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            
+            if (beamGroup.length > 0) {
+                alert('请先完成当前连音组或切换到断开减时线模式');
+                return;
+            }
+            
+            const spacer = document.createElement('div');
+            spacer.className = 'spacer';
+            activeLine.insertBefore(spacer, cursor);
+        }
+        
+        // 插入休止符
+        function insertRest() {
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            
+            if (beamGroup.length > 0) {
+                alert('请先完成当前连音组或切换到断开减时线模式');
+                return;
+            }
+            
+            const rest = document.createElement('div');
+            rest.className = 'rest';
+            
+            let restContent = '<div>○</div>';
+            
+            if (currentDuration === 'eighth' || currentDuration === 'sixteenth') {
+                restContent += '<div class="beam-container">';
+                if (currentDuration === 'eighth') {
+                    restContent += '<div class="beam-line"></div>';
+                } else {
+                    restContent += '<div class="beam-line"></div>';
+                    restContent += '<div class="beam-line second"></div>';
+                }
+                restContent += '</div>';
+            } else if (currentDuration === 'half') {
+                restContent = '<div>○~</div>';
+            } else if (currentDuration === 'whole') {
+                restContent = '<div>○~~~</div>';
+            }
+            
+            if (isDotted) {
+                restContent = restContent.replace('</div>', '·</div>');
+            }
+            
+            rest.innerHTML = restContent;
+            rest.dataset.duration = currentDuration;
+            
+            activeLine.insertBefore(rest, cursor);
+            checkPageOverflow(); // 检查是否需要新页
+        }
+        
+        function insertBarline() {
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            
+            if (beamGroup.length > 0) {
+                alert('请先完成当前连音组或切换到断开减时线模式');
+                return;
+            }
+            
+            const barline = document.createElement('div');
+            barline.className = 'barline';
+            activeLine.insertBefore(barline, cursor);
+        }
+        
+        function insertDoubleBar() {
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            
+            if (beamGroup.length > 0) {
+                alert('请先完成当前连音组或切换到断开减时线模式');
+                return;
+            }
+            
+            const doubleBar = document.createElement('div');
+            doubleBar.className = 'barline';
+            doubleBar.style.width = '6px';
+            doubleBar.style.borderLeft = '2px solid #333';
+            doubleBar.style.borderRight = '2px solid #333';
+            activeLine.insertBefore(doubleBar, cursor);
+        }
+        
+        function insertRepeat(type) {
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            
+            if (beamGroup.length > 0) {
+                alert('请先完成当前连音组或切换到断开减时线模式');
+                return;
+            }
+            
+            const repeat = document.createElement('div');
+            repeat.className = 'repeat-sign';
+            repeat.innerHTML = type;
+            activeLine.insertBefore(repeat, cursor);
+        }
+        
+        function deleteLast() {
+            const activeLine = document.querySelector('.score-line.active');
+            const cursor = activeLine.querySelector('.cursor');
+            const prev = cursor.previousElementSibling;
+            
+            if (prev) {
+                prev.remove();
+            }
+        }
+        
+        function clearLine() {
+            const activeLine = document.querySelector('.score-line.active');
+            
+            activeLine.querySelectorAll('.tie-line-svg').forEach(svg => {
+                svg.remove();
+            });
+            
+            tieLinesData = tieLinesData.filter(tie => tie.line !== activeLine);
+            
+            activeLine.innerHTML = '<div class="cursor"></div>';
+            beamGroup = [];
+            tripletGroup = [];
+            updateBeamStatus();
+        }
+        
+        function deleteLine() {
+            const activeLine = document.querySelector('.score-line.active');
+            if (!activeLine) {
+                alert('请先选择要删除的行');
+                return;
+            }
+            
+            // 获取当前页的所有行
+            const currentPageNum = activeLine.dataset.page;
+            const currentPageElement = document.getElementById(`page-${currentPageNum}`);
+            const linesInPage = currentPageElement.querySelectorAll('.score-line');
+            
+            // 如果是第一页的第一行，不允许删除
+            if (currentPageNum === '1' && linesInPage.length === 1) {
+                alert('不能删除第一页的最后一行');
+                return;
+            }
+            
+            // 确认删除
+            if (!confirm('确定要删除这一行吗？')) {
+                return;
+            }
+            
+            // 删除相关的连音线
+            tieLinesData = tieLinesData.filter(tie => tie.line !== activeLine);
+            
+            // 获取下一行或上一行作为新的活动行
+            let newActiveLine = activeLine.nextElementSibling || activeLine.previousElementSibling;
+            
+            // 删除当前行
+            activeLine.remove();
+            
+            // 如果当前页没有行了，并且不是第一页，删除当前页
+            if (linesInPage.length === 1 && currentPageNum !== '1') {
+                currentPageElement.remove();
+                // 重新编号页码
+                renumberPages();
+                // 选择上一页的最后一行
+                const prevPage = document.getElementById(`page-${parseInt(currentPageNum) - 1}`);
+                if (prevPage) {
+                    const prevPageLines = prevPage.querySelectorAll('.score-line');
+                    if (prevPageLines.length > 0) {
+                        newActiveLine = prevPageLines[prevPageLines.length - 1];
+                    }
+                }
+            }
+            
+            // 设置新的活动行
+            if (newActiveLine && newActiveLine.classList.contains('score-line')) {
+                document.querySelectorAll('.score-line').forEach(l => l.classList.remove('active'));
+                newActiveLine.classList.add('active');
+            } else {
+                // 如果没有找到合适的行，选择第一行
+                const firstLine = document.querySelector('.score-line');
+                if (firstLine) {
+                    firstLine.classList.add('active');
+                }
+            }
+            
+            // 重新编号行号
+            renumberLines();
+            updateLineSelector();
+        }
+        
+        function deletePage() {
+            // 获取所有页面
+            const allPages = document.querySelectorAll('.score-page');
+            
+            // 如果只有一页，不允许删除
+            if (allPages.length <= 1) {
+                alert('不能删除最后一页');
+                return;
+            }
+            
+            // 获取当前活动行所在的页面
+            const activeLine = document.querySelector('.score-line.active');
+            let currentPageNum = 1;
+            
+            if (activeLine) {
+                currentPageNum = parseInt(activeLine.dataset.page);
+            }
+            
+            const pageToDelete = document.getElementById(`page-${currentPageNum}`);
+            if (!pageToDelete) {
+                alert('找不到要删除的页面');
+                return;
+            }
+            
+            // 确认删除
+            if (!confirm(`确定要删除第 ${currentPageNum} 页吗？该页上的所有内容都将被删除。`)) {
+                return;
+            }
+            
+            // 删除该页相关的所有连音线
+            const linesInPage = pageToDelete.querySelectorAll('.score-line');
+            linesInPage.forEach(line => {
+                tieLinesData = tieLinesData.filter(tie => tie.line !== line);
+            });
+            
+            // 删除页面
+            pageToDelete.remove();
+            
+            // 重新编号所有页面
+            renumberPages();
+            
+            // 重新编号所有行
+            renumberLines();
+            
+            // 更新当前页数
+            currentPage = document.querySelectorAll('.score-page').length;
+            
+            // 选择第一页的第一行作为活动行
+            const firstPageFirstLine = document.querySelector('.score-page .score-line');
+            if (firstPageFirstLine) {
+                document.querySelectorAll('.score-line').forEach(l => l.classList.remove('active'));
+                firstPageFirstLine.classList.add('active');
+            }
+            
+            // 更新行选择器
+            updateLineSelector();
+        }
+        
+        function renumberPages() {
+            const allPages = document.querySelectorAll('.score-page');
+            allPages.forEach((page, index) => {
+                const newPageNum = index + 1;
+                page.id = `page-${newPageNum}`;
+                page.dataset.page = newPageNum;
+                
+                // 更新页码指示器
+                const indicator = page.querySelector('.page-indicator');
+                if (indicator) {
+                    indicator.textContent = `第 ${newPageNum} 页`;
+                }
+                
+                // 更新该页所有行的页码
+                const lines = page.querySelectorAll('.score-line');
+                lines.forEach(line => {
+                    line.dataset.page = newPageNum;
+                });
+            });
+        }
+        
+        function renumberLines() {
+            let globalLineNumber = 1;
+            document.querySelectorAll('.score-line').forEach(line => {
+                line.dataset.line = globalLineNumber;
+                globalLineNumber++;
+            });
+            currentLine = globalLineNumber - 1;
+        }
+        
+        function newLine(inNewPage = false) {
+            if (beamGroup.length > 0) {
+                alert('请先完成当前连音组或切换到断开减时线模式');
+                return;
+            }
+            
+            document.querySelectorAll('.score-line').forEach(line => {
+                line.classList.remove('active');
+            });
+            
+            const pageToUse = inNewPage ? currentPage : 
+                (document.querySelector('.score-line.active')?.dataset.page || currentPage);
+            const pageElement = document.getElementById(`page-${pageToUse}`);
+            const scoreLines = pageElement.querySelector('.score-content #scoreLines, .score-content');
+            
+            currentLine++;
+            const newLineDiv = document.createElement('div');
+            newLineDiv.className = 'score-line active';
+            newLineDiv.dataset.line = currentLine;
+            newLineDiv.dataset.page = pageToUse;
+            newLineDiv.innerHTML = '<div class="cursor"></div>';
+            
+            newLineDiv.addEventListener('click', function() {
+                document.querySelectorAll('.score-line').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+            
+            if (scoreLines.id === 'scoreLines') {
+                scoreLines.appendChild(newLineDiv);
+            } else {
+                // 如果是新页，创建scoreLines容器
+                let linesContainer = scoreLines.querySelector('#scoreLines');
+                if (!linesContainer) {
+                    linesContainer = document.createElement('div');
+                    linesContainer.id = 'scoreLines';
+                    scoreLines.appendChild(linesContainer);
+                }
+                linesContainer.appendChild(newLineDiv);
+            }
+            
+            updateLineSelector();
+            checkPageOverflow(); // 检查是否需要新页
+        }
+        
+        function updateTitle() {
+            const title = document.getElementById('title').value;
+            document.getElementById('scoreTitle').textContent = title || '未命名乐谱';
+        }
+        
+        function updateFontSize(size) {
+            fontSize = size;
+            document.getElementById('fontSizeValue').textContent = size + 'px';
+            document.documentElement.style.setProperty('--score-font-size', size + 'px');
+            document.documentElement.style.setProperty('--arrow-size', size + 'px');
+        }
+        
+        function initKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                if (e.target.tagName === 'INPUT') return;
+                
+                const key = e.key;
+                const noteMap = {
+                    '1': { arrow: 'up', note: '1', svg: 'arrow-up' },
+                    '2': { arrow: 'right-up', note: '2', svg: 'arrow-right-up' },
+                    '3': { arrow: 'right', note: '3', svg: 'arrow-right' },
+                    '4': { arrow: 'right-down', note: '4', svg: 'arrow-right-down' },
+                    '5': { arrow: 'down', note: '5', svg: 'arrow-down' },
+                    '6': { arrow: 'left-down', note: '6', svg: 'arrow-left-down' },
+                    '7': { arrow: 'left', note: '7', svg: 'arrow-left' },
+                    '8': { arrow: 'left-up', note: "1'", svg: 'arrow-left-up' }
+                };
+                
+                if (noteMap[key]) {
+                    lastNote = {
+                        arrow: noteMap[key].arrow,
+                        note: noteMap[key].note,
+                        svg: noteMap[key].svg,
+                        modifier: currentModifier
+                    };
+                    if (isTripletMode) {
+                        insertTripletNote(noteMap[key].arrow, noteMap[key].note, noteMap[key].svg);
+                    } else {
+                        insertNote(noteMap[key].arrow, noteMap[key].note, noteMap[key].svg);
+                    }
+                } else if (key === '0') {
+                    insertRest();
+                } else if (key === ' ') {
+                    e.preventDefault();
+                    insertSpacer();
+                } else if (key === '|') {
+                    insertBarline();
+                } else if (key === 'Delete' || key === 'Backspace') {
+                    deleteLast();
+                } else if (key === 'Enter') {
+                    newLine();
+                } else if (key === '=' || key === '+') {
+                    insertTie();
+                } else if (key === 'ArrowLeft') {
+                    e.preventDefault();
+                    moveCursor('left');
+                } else if (key === 'ArrowRight') {
+                    e.preventDefault();
+                    moveCursor('right');
+                } else if (key === 'c' || key === 'C') {
+                    e.preventDefault();
+                    centerLine();
+                }
+            });
+        }
+        
+        function saveScore() {
+            const data = {
+                title: document.getElementById('title').value,
+                scoreInfo: document.getElementById('scoreInfo').value,
+                tempo: document.getElementById('tempo').value,
+                fontSize: fontSize,
+                pages: []
+            };
+            
+            document.querySelectorAll('.score-page').forEach(page => {
+                const pageData = {
+                    pageNumber: page.dataset.page,
+                    lines: []
+                };
+                
+                page.querySelectorAll('.score-line').forEach(line => {
+                    const lineData = {
+                        marginTop: line.style.marginTop || '0',
+                        marginBottom: line.style.marginBottom || '20px',
+                        isCentered: line.classList.contains('centered'),
+                        gap: line.style.gap || '',
+                        elements: []
+                    };
+                    
+                    line.childNodes.forEach(element => {
+                        if (element.classList && !element.classList.contains('cursor')) {
+                            lineData.elements.push({
+                                html: element.outerHTML
+                            });
+                        }
+                    });
+                    
+                    if (lineData.elements.length > 0) {
+                        pageData.lines.push(lineData);
+                    }
+                });
+                
+                if (pageData.lines.length > 0) {
+                    data.pages.push(pageData);
+                }
+            });
+            
+            localStorage.setItem('arrowScore', JSON.stringify(data));
+            alert('保存成功！');
+        }
+        
+        function loadScore() {
+            const saved = localStorage.getItem('arrowScore');
+            if (!saved) {
+                alert('没有保存的乐谱');
+                return;
+            }
+            
+            const data = JSON.parse(saved);
+            document.getElementById('title').value = data.title;
+            document.getElementById('scoreInfo').value = data.scoreInfo || '';
+            document.getElementById('tempo').value = data.tempo;
+            if (data.fontSize) {
+                updateFontSize(data.fontSize);
+                document.getElementById('fontSize').value = data.fontSize;
+            }
+            updateTitle();
+            
+            // 清空现有页面
+            const container = document.getElementById('scoreContainer');
+            container.innerHTML = '';
+            
+            // 重新创建页面
+            data.pages.forEach((pageData, pageIndex) => {
+                const pageHtml = `
+                    <div class="score-page" id="page-${pageIndex + 1}" data-page="${pageIndex + 1}">
+                        ${pageIndex === 0 ? `
+                            <h1 class="score-title" id="scoreTitle">${data.title || '未命名乐谱'}</h1>
+                            <div class="score-info">
+                                <input type="text" id="scoreInfo" placeholder="调号：C大调  拍号：4/4  速度：Andante" value="${data.scoreInfo || ''}" />
+                            </div>
+                        ` : ''}
+                        <div class="score-content">
+                            <div id="scoreLines"></div>
+                        </div>
+                        <div class="page-indicator">第 ${pageIndex + 1} 页</div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', pageHtml);
+                
+                const pageElement = document.getElementById(`page-${pageIndex + 1}`);
+                const scoreLines = pageElement.querySelector('#scoreLines');
+                
+                pageData.lines.forEach((lineData, lineIndex) => {
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = 'score-line' + (pageIndex === 0 && lineIndex === 0 ? ' active' : '');
+                    if (lineData.isCentered) {
+                        lineDiv.classList.add('centered');
+                    }
+                    lineDiv.dataset.line = lineIndex + 1;
+                    lineDiv.dataset.page = pageIndex + 1;
+                    lineDiv.style.marginTop = lineData.marginTop || '0';
+                    lineDiv.style.marginBottom = lineData.marginBottom || '20px';
+                    if (lineData.gap) {
+                        lineDiv.style.gap = lineData.gap;
+                    }
+                    
+                    lineData.elements.forEach(item => {
+                        const temp = document.createElement('div');
+                        temp.innerHTML = item.html;
+                        lineDiv.appendChild(temp.firstChild);
+                    });
+                    
+                    lineDiv.innerHTML += '<div class="cursor"></div>';
+                    
+                    lineDiv.addEventListener('click', function() {
+                        document.querySelectorAll('.score-line').forEach(l => l.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                    
+                    scoreLines.appendChild(lineDiv);
+                });
+            });
+            
+            currentPage = data.pages.length || 1;
+            currentLine = document.querySelectorAll('.score-line').length;
+            updateLineSelector();
+            alert('加载成功！');
+        }
+        
+        function exportScore() {
+            saveScore();
+            const data = localStorage.getItem('arrowScore');
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (document.getElementById('title').value || '未命名乐谱') + '.json';
+            a.click();
+        }
+        
+        function printScore() {
+            window.print();
+        }
+    </script>
+</body>
+</html>
